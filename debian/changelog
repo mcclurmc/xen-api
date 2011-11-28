@@ -1,3 +1,9 @@
+xen-api (0.1-6ubuntu1) oneiric; urgency=low
+
+  * Ubuntu Oneiric bump
+
+ -- Mike McClurg <mike.mcclurg@citrix.com>  Mon, 28 Nov 2011 15:15:52 +0000
+
 xen-api (0.1-6) unstable; urgency=low
 
   * Fix the xapissl init script so that it's no longer an init script
