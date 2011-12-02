@@ -9,7 +9,7 @@ Subject: udev-fixes
  3 files changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/scripts/OMakefile b/scripts/OMakefile
-index c5d5c77..88c7cbe 100644
+index f8fc58f..ca07133 100644
 --- a/scripts/OMakefile
 +++ b/scripts/OMakefile
 @@ -50,7 +50,8 @@ install:

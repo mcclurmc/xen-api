@@ -21,7 +21,7 @@ index 823049f..92d9e63 100644
  let stop () =
  	debug "Shutting down the old management interface (if any)";
 diff --git a/scripts/OMakefile b/scripts/OMakefile
-index 88c7cbe..d86c578 100644
+index ca07133..fd8f963 100644
 --- a/scripts/OMakefile
 +++ b/scripts/OMakefile
 @@ -35,7 +35,7 @@ install:

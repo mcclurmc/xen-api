@@ -9,7 +9,7 @@ Subject: new-ocaml-layout
  3 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/Makefile b/Makefile
-index b2a5c49..2ce32b1 100644
+index e7253fe..ea42593 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -7,6 +7,9 @@ MY_OUTPUT_DIR ?= $(CURDIR)/output
@@ -23,10 +23,10 @@ index b2a5c49..2ce32b1 100644
  RPM_SRPMSDIR?=$(shell rpm --eval='%_srcrpmdir')
  RPM_SOURCESDIR?=$(shell rpm --eval='%_sourcedir')
 diff --git a/ocaml/idl/OMakefile b/ocaml/idl/OMakefile
-index bde01cd..8c14d2e 100644
+index a249de0..fe5768d 100644
 --- a/ocaml/idl/OMakefile
 +++ b/ocaml/idl/OMakefile
-@@ -158,7 +158,7 @@ META: META.in
+@@ -101,7 +101,7 @@ META: META.in
  	sed 's/@VERSION@/$(PRODUCT_VERSION)/g' < $< > $@
  
  if $(defined DESTDIR)

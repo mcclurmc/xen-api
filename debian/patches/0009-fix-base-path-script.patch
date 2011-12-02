@@ -7,7 +7,7 @@ Subject: fix-base-path-script
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/OMakefile b/OMakefile
-index ec63fe5..2ba59fc 100644
+index 68b1478..29464ce 100644
 --- a/OMakefile
 +++ b/OMakefile
 @@ -50,7 +50,7 @@ XEN_OCAML_CLIBS=

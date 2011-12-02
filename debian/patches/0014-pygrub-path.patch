@@ -10,7 +10,7 @@ Subject: pygrub-path
  create mode 100644 scripts/pygrub.xcp
 
 diff --git a/ocaml/xapi/xapi_globs.ml b/ocaml/xapi/xapi_globs.ml
-index ea4e549..bb57b74 100644
+index 65d94c9..ad3ae5c 100644
 --- a/ocaml/xapi/xapi_globs.ml
 +++ b/ocaml/xapi/xapi_globs.ml
 @@ -149,7 +149,7 @@ let software_version = [ _product_version, Version.product_version;
@@ -23,7 +23,7 @@ index ea4e549..bb57b74 100644
  let supported_bootloaders = [ "pygrub", pygrub_path;
  			      "eliloader", eliloader_path ]
 diff --git a/scripts/OMakefile b/scripts/OMakefile
-index 492964b..c5d5c77 100644
+index 64334f5..f8fc58f 100644
 --- a/scripts/OMakefile
 +++ b/scripts/OMakefile
 @@ -109,6 +109,7 @@ install:
