@@ -21,4 +21,4 @@ api_docs: custom_actions_doc
 .PHONY: install
 install:
 	mkdir -p $(BASE_PATH)/debug
-	$(IPROG) rbac_static.csv $(BASE_PATH)/debug
+	$(IDATA) rbac_static.csv $(BASE_PATH)/debug

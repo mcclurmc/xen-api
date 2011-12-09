@@ -22,15 +22,15 @@ install:
 	$(IPROG) xapi-health-check $(LIBEXEC)
 	$(IPROG) license-check.py $(LIBEXEC)
 	$(IPROG) mail-alarm $(LIBEXEC)
-	$(IPROG) audit-logrotate $(DESTDIR)/etc/logrotate.d/audit
-	$(IPROG) xapi-logrotate $(DESTDIR)/etc/logrotate.d/xapi
+	$(IDATA) audit-logrotate $(DESTDIR)/etc/logrotate.d/audit
+	$(IDATA) xapi-logrotate $(DESTDIR)/etc/logrotate.d/xapi
 	$(IPROG) xapi-wait-init-complete $(BIN_PATH)
 	$(IPROG) xapi-autostart-vms $(BIN_PATH)
 	$(IPROG) udhcpd.skel $(DESTDIR)/var/xapi/udhcpd.skel
-	$(IPROG) xapi.conf $(DESTDIR)/etc/xapi.conf
-	$(IPROG) log.conf $(DESTDIR)/etc/xensource/log.conf
-	$(IPROG) db.conf.skel $(DESTDIR)/etc/xensource/db.conf
-	$(IPROG) rio.db.conf.skel $(DESTDIR)/etc/xensource/db.conf.rio
+	$(IDATA) xapi.conf $(DESTDIR)/etc/xapi.conf
+	$(IDATA) log.conf $(DESTDIR)/etc/xensource/log.conf
+	$(IDATA) db.conf.skel $(DESTDIR)/etc/xensource/db.conf
+	$(IDATA) rio.db.conf.skel $(DESTDIR)/etc/xensource/db.conf.rio
 	mkdir -p $(DESTDIR)/etc/init.d
 	mkdir -p $(DESTDIR)/etc/rc.d/init.d
 	$(IPROG) init.d-xenservices $(DESTDIR)/etc/rc.d/init.d/xenservices
@@ -71,9 +71,9 @@ install:
 	ln -sf ../xen-frontend.rules'
 	mkdir -p $(DESTDIR)/etc/xensource/scripts
 	$(IPROG) block-frontend vif tap block $(DESTDIR)/etc/xensource/scripts
-	$(IPROG) pool.conf $(DESTDIR)/etc/xensource
+	$(IDATA) pool.conf $(DESTDIR)/etc/xensource
 	mkdir -p $(DESTDIR)/etc/pam.d
-	$(IPROG) pam.d-xapi $(DESTDIR)/etc/pam.d/xapi
+	$(IDATA) pam.d-xapi $(DESTDIR)/etc/pam.d/xapi
 	$(IPROG) qemu-dm-wrapper vncterm-wrapper upload-wrapper logs-download $(LIBEXEC)
 	mkdir -p $(BASE_PATH)/packages/iso #omg XXX
 	$(IPROG) interface-reconfigure $(LIBEXEC)

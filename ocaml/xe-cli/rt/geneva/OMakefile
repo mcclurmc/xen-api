@@ -15,10 +15,12 @@ clean:
 .PHONY: install
 install:
 	mkdir -p $(DEBUGDIST)
-	$(IPROG) cli_test sm_stress myfirstpatch.asc $(DEBUGDIST)
+	$(IDATA) myfirstpatch.asc $(DEBUGDIST)
+	$(IPROG) cli_test sm_stress $(DEBUGDIST)
 
 .PHONY: install
 install:
 	rm -rf $(DIST)/cli-regress-geneva
 	mkdir -p $(DIST)/cli-regress-geneva
-	$(IPROG) cli_test sm_stress license.txt myfirstpatch.asc pwfile_unix.txt pwfile_windows.txt $(DIST)/cli-regress-geneva
+	$(IDATA) myfirstpatch.asc license.txt pwfile_unix.txt pwfile_windows.txt $(DIST)/cli-regress-geneva
+	$(IPROG) cli_test sm_stress $(DIST)/cli-regress-geneva
