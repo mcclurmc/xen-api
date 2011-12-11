@@ -12,7 +12,7 @@ XE="@BASE_PATH@/bin/xe"
 
 # Clean all unreferenced patches out of the db now that the upgrade is complete.
 # When upgrading to 5.0, this should clean out all 4.1 patches at the end.
-function clean_patches {
+clean_patches {
     IFS=,
     for pool_patch in $(xe patch-list --minimal params=uuid hosts=) ; do
         xe patch-destroy uuid=${pool_patch}
