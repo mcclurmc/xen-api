@@ -1,4 +1,5 @@
 #! /bin/sh
+
 ### BEGIN INIT INFO
 # Provides:          xcp-v6d
 # Required-Start:    $remote_fs $syslog
@@ -6,8 +7,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: V6d licensing daemon
-# Description:       The licensing daemon used as part of xenserver. Here temporarily
-# 
+# Description:       The licensing daemon used as part of xenserver.
 ### END INIT INFO
 
 # Author: Jon Ludlam <jonathan.ludlam@eu.citrix.com>
