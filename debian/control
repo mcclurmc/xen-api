@@ -61,8 +61,8 @@ Description: The XCP XenAPI server
 
 Package: xcp-squeezed
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, xen-hypervisor
-Description: A daemon in charge of ballooning xen domains
+Depends: ${shlibs:Depends}, ${misc:Depends}, xen-hypervisor-4.1-amd64 | xen-hypervisor-4.1-i386 | xen-hypervisor
+Description: daemon in charge of ballooning xen domains
  The Xen Cloud Platform (XCP) is an open source enterprise-ready server
  virtualization and cloud computing platform, with support for a range of
  guest operating systems, Linux network and storage support.
