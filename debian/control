@@ -35,7 +35,7 @@ Description: Meta-package for the Xen Cloud Platform
 
 Package: xcp-xapi
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, xcp-squeezed, xcp-v6d, xcp-fe, xcp-storage-managers, xen-hypervisor-4.1, xen-utils-4.1, stunnel, hwdata, xcp-eliloader
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, xcp-squeezed, xcp-v6d, xcp-fe, xcp-storage-managers, xen-hypervisor-4.1-amd64 | xen-hypervisor-4.1-i386 | xen-hypervisor-4.1, xen-utils-4.1, stunnel, hwdata, xcp-eliloader
 Recommends: xcp-vncterm, xcp-guest-templates
 Provides: xcp
 Description: XCP XenAPI server
