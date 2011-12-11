@@ -26,3 +26,5 @@ override_dh_fixperms:
 	dh_fixperms
 	find debian/xcp-xapi/etc -type f -exec chown -x {} \;
 	chmod -x debian/xcp-xapi/lib/udev/rules.d/xen-frontend.rules
+	chmod -x xcp-xapi-debug/usr/lib/xcp/debug/rbac_static.csv
+	chmod -x xcp-xapi-debug/usr/lib/xcp/debug/myfirstpatch.asc
