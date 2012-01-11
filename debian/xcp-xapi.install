@@ -66,3 +66,4 @@
 /etc/xcp
 /lib
 /usr/lib/xcp/lib/xapissl
+/usr/lib/xcp/bin/xe-networkd
