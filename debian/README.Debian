@@ -73,7 +73,7 @@ for one of them if you plan booting on iso images. Note that you can still
 install Debian guests without using an iso SR. Anyway, for Samba, you will need
 to do:
 
-apt-get install smbfs
+apt-get install cifs-utils
 
 The following samba config will serve these images in the folder /iso-images:
 
@@ -205,7 +205,7 @@ If you have some ISO images that you want to use in your VMs, then you
 should export them through NFS or a samba share, then do as below for
 samba:
 
-/usr/lib/xcp/bin/xe-mount-iso-sr //12.23.34.45/isoimg -t smbfs
+/usr/lib/xcp/bin/xe-mount-iso-sr //12.23.34.45/isoimg -t cifs
 
 "isoimg" is of course here the name of the share Samba share (nothing unusual,
 right?).
@@ -220,10 +220,10 @@ and see the list of available iso images. Note that there's some sort of
 caching, so it may take few seconds until "xe cd-list" shows the iso that you
 may have dropped in this share.
 
-Note that neither smbfs nor nfs-common are hard dependencies, so you may
+Note that neither cifs-utils nor nfs-common are hard dependencies, so you may
 need to apt-get install these packages manually:
 
-apt-get install smbfs
+apt-get install cifs-utils
 or
 apt-get install nfs-common
 
