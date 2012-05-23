@@ -155,6 +155,20 @@ Note that it will survive reboots. If you use dhcp, then simply use:
 PIF_UUID=`xe pif-list device=eth0`
 xe pif-reconfigure-ip uuid=$PIF_UUID mode=dhcp
 
+Note that you will need to be running Xen and have xe as your TOOLSTACK (see
+below) to be able to execute xe and configure your network.
+
+If you want xe to listen on the public IP address, you will need to have your
+MANAGEMENT_INTERFACE variable set as the default bridge interface in the
+/etc/xcp/inventory file. Here is an example:
+
+lnx200-39:~# cat /etc/xcp/inventory
+BUILD_NUMBER='0'
+CURRENT_INTERFACES='xenbr0'
+CONTROL_DOMAIN_UUID='de90f922-8bd8-176e-ea9a-4efece397b73'
+MANAGEMENT_INTERFACE='xenbr0'
+INSTALLATION_UUID='7f4f3149-2e9d-7bb5-bb99-fd51420a8cd6'
+
 4.3/ Set Xen as default in GRUB
 cd /etc/grub.d
 mv 10_linux 25_linux
