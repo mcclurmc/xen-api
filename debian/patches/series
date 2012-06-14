@@ -34,3 +34,4 @@ xe-toolstack-restart-paths
 fix-xenapi-py
 fix-vif-script
 xe-edit-bootloader.patch
+bug677395-remove-old-ip

@@ -1,6 +1,7 @@
 xen-api (1.3.2-8) unstable; urgency=low
 
   * Fixed xe-edit-bootloader.  Closes: #675055 #675050
+  * xe pif-reconfigure-ip now removes old ip from interface. Closes #677395
 
  -- Mike McClurg <mike.mcclurg@citrix.com>  Wed, 30 May 2012 13:39:51 +0100
 
