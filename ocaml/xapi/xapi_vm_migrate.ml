@@ -561,6 +561,9 @@ let handler req fd _ =
 	let vm = Ref.of_string (safe_lookup "ref" req.Http.Request.query) in
 
 	Server_helpers.exec_with_forwarded_task ~session_id task_id ~origin:(Context.Http(req,fd)) (fun __context ->
+		(* Attach networks for the VM *)
+		Xapi_xenops.with_networks_attached ~__context ~self:vm (fun () ->
+
 		let localhost = Helpers.get_localhost ~__context in
 
 		(* NB this parameter will be present except when we're doing a rolling upgrade. *)
@@ -631,5 +634,5 @@ let handler req fd _ =
 			TaskHelper.failed ~__context(code, params)
 		| e ->
 			TaskHelper.failed ~__context (Api_errors.internal_error, [ ExnHelper.string_of_exn e ])
-    )
+    ))
 
