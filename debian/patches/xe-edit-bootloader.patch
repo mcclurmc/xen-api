@@ -1,7 +1,7 @@
 Description: CA-81375: xe-edit-bootloader uses kpartx
 Origin: upstream, commit a8bd0f84284c31bddca8d4b554ccd4a4072d624f
 Author: Mike McClurg <mike.mcclurg@citrix.com>
-Bug-Debian: http://bugs.debian.org/
+Bug-Debian: http://bugs.debian.org/675050, http://bugs.debian.org/675055
 Last-Update: Wed May 30 13:26:14 2012 +0100
 
 --- a/scripts/xe-edit-bootloader
