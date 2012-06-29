@@ -1,9 +1,15 @@
 xen-api (1.3.2-7) unstable; urgency=low
 
+  * Added xe-edit-bootloader.patch to fix incompatible with new /dev/sm
+  (Closes: #675055), thanks to George Shuklin <george.shuklin@gmail.com>
+  for reporting.
+  * Fixes "xe pif-configure-ip does not remove old ip from interface",
+  thanks to George Shuklin <george.shuklin@gmail.com> for reporting
+  (Closes: #677395).
   * Fixed debian/README.Debian to tell about the MANAGEMENT_INTERFACE in the
   /etc/xcp/inventory file (Closes: #655303).
 
- -- Thomas Goirand <zigo@debian.org>  Wed, 23 May 2012 10:40:18 +0000
+ -- Thomas Goirand <zigo@debian.org>  Fri, 29 Jun 2012 18:49:43 +0000
 
 xen-api (1.3.2-6) unstable; urgency=low
 
