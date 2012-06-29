@@ -8,6 +8,8 @@ xen-api (1.3.2-7) unstable; urgency=low
   (Closes: #677395).
   * Fixed debian/README.Debian to tell about the MANAGEMENT_INTERFACE in the
   /etc/xcp/inventory file (Closes: #655303).
+  * debian/README.Debian now advises correctly to use xapi as TOOLSTACK and not xe
+  anymore (Closes: #674132).
 
  -- Thomas Goirand <zigo@debian.org>  Fri, 29 Jun 2012 18:49:43 +0000
 

@@ -97,9 +97,9 @@ system may use completion.
 
 4/ Configuring Xen and XCP
 --------------------------
-4.1/ Switch using xl instead of xm and xend to control Xen
+4.1/ Switch using xapi instead of xm and xend to control Xen
 As of writing, you should do that:
-sed -i "s/TOOLSTACK=/TOOLSTACK=xl/" /etc/default/xen
+sed -i "s/TOOLSTACK=/TOOLSTACK=xapi/" /etc/default/xen
 
 It is later planned to change this in Debian with 3 switches: xm, xl and xe.
 Since this is not yet implemented, please refer to the /etc/default/xen
