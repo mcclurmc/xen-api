@@ -20,7 +20,7 @@ these values to match his own configuration.
 Before we start, remember that many "xe" commands are simply outputing a UUID
 uppon success. This UUID can later be used as a unique reference for the object
 that we are talking about. For example, a VM (Virtual Machine) has a UUID, but
-so does a compute node, it's network (bridge), it's physical network interface,
+so does a compute node, its network (bridge), its physical network interface,
 a virtual machine network interface, a storage repository, an iso image, etc.
 
 When we write:
@@ -279,13 +279,13 @@ which image would be in your iso SR (see above), then you could have done
 this way:
 xe vm-cd-add vm=windows cd-name=squeeze.iso device=3
 
-Before you start it, you can set it's memory to 1GB:
+Before you start it, you can set its memory to 1GB:
 xe vm-memory-limits-set static-min=1024MiB static-max=1024MiB \
    dynamic-min=1024MiB dynamic-max=1024MiB \
    vm=$vm
 
 If you want to resize the HDD of a VM, you should first get the UUID
-of it's VDI:
+of its VDI:
 
 xe vm-disk-list vm=$vm
 
@@ -302,7 +302,7 @@ xe vm-clone new-name-label=squeeze-32-bits-1024mb vm=$vm
 Finally start the VM:
 xe vm-start uuid=$vm
 
-And access it's console:
+And access its console:
 xe console vm=$vm
 
 When you're done with the VM, you can do:
