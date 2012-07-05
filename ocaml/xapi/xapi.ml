@@ -172,7 +172,7 @@ let signals_handling () =
 
 let domain0_setup () =
   with_xc_and_xs (fun xc xs ->
-    let already_setup = try ignore(xs.Xs.read "/local/domain/0/name"); true with _ -> false in
+    let already_setup = try ignore(xs.Xs.read "/local/domain/0/vm"); true with _ -> false in
     if not already_setup then begin
 	     (* Write an initial neutral target in for domain 0 *)
 	     let di = Xenctrl.domain_getinfo xc 0 in
