@@ -1,6 +1,9 @@
 xen-api (1.3.2-8) unstable; urgency=low
 
-  * Typo on debian/DEBIAN.Readme
+  * Typo on debian/DEBIAN.Readme.
+  * Quilt refresh patches.
+  * Applied upstream fix for lack of /local/domain/0/vm in xenstore prevents
+  vbd/vif plug bug (Closes: #674161).
 
  -- Thomas Goirand <zigo@debian.org>  Thu, 05 Jul 2012 17:31:49 +0000
 
