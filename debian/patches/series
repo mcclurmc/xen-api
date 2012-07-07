@@ -36,3 +36,4 @@ fix-vif-script
 xe-edit-bootloader.patch
 bug677395-remove-old-ip
 write-dom0-xenstore-keys-on-startup.patch
+bug680102-pool-eject
