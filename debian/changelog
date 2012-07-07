@@ -4,6 +4,8 @@ xen-api (1.3.2-9) unstable; urgency=low
   * Fixes host-disable and host-reboot make host disable forever by adding the
   '-onsystemboot' parameter when starting the xcp-xapi daemon. Thanks to
   George Shuklin <george.shuklin@gmail.com>for the report (Closes: #678923).
+  * Checks if $1 = configure in debian/xcp-networkd.postinst, which as a side
+  effect is also repairing debconf choice (openvswitch was used no mater what).
 
  -- Thomas Goirand <zigo@debian.org>  Sat, 07 Jul 2012 05:45:45 +0000
 
