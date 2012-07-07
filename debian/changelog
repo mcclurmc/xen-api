@@ -1,3 +1,9 @@
+xen-api (1.3.2-9) unstable; urgency=low
+
+  * xcp-xapi init script now Should-Start: xcp-networkd (Closes: #680588).
+
+ -- Thomas Goirand <zigo@debian.org>  Sat, 07 Jul 2012 05:45:45 +0000
+
 xen-api (1.3.2-8) unstable; urgency=low
 
   * Typo on debian/DEBIAN.Readme.
