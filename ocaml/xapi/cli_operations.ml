@@ -2476,42 +2476,32 @@ let get_host_from_params rpc session_id params =
 		with Not_found -> None
 	else None
 
-let vm_migrate_sxm_params = ["remote-address"; "remote-username"; "vif";
+let vm_migrate_sxm_params = ["remote-master"; "remote-username"; "vif";
 	"remote-password"; "remote-network"; "destination-sr-uuid"; "vdi"]
 
-let is_pool_migrate printer rpc session_id params =
-	(* let hosts = select_hosts rpc session_id params *)
-	(* 	( "vm" :: "live" :: vm_migrate_sxm_params) in *)
-	(* match hosts with *)
-	(* 	| [] -> printer (Cli_printer.PMsg "is_pool_migrate: NO host found") ; false *)
-	(* 	| [h] -> printer (Cli_printer.PMsg "is_pool_migrate: host found!") ; true *)
-	(* 	| _ -> failwith "Multiple hosts selected" *)
-	try ignore (get_host_from_params rpc session_id params) ; true
+let is_pool_migrate rpc session_id params =
+	try (get_host_from_params rpc session_id params) <> None
 	with _ -> false
 
 (* The user has specified the storage-migrate code path IFF:
    - any of the vm_migrate_sxm_params above are set
    - assert_can_boot_here fails with VM_REQUIRES_SR *)
 let is_storage_migrate printer rpc session_id params =
-
-	printer (Cli_printer.PMsg "Hello from is_storage_migrate!") ;
-
 	let sxm_params_match () =
 		List.(fold_left (or) false
 				  (map (fun k -> mem_assoc k params)
 					   vm_migrate_sxm_params))
 
-	and is_pool_migrate () = is_pool_migrate printer rpc session_id params
+	and is_pool_migrate () = is_pool_migrate rpc session_id params
 
 	and host_has_sr () =
 		let vms = select_vms rpc session_id params
 			( "host" :: "host-uuid" :: "host-name" :: "live"
 			  :: vm_migrate_sxm_params ) in
-		printer (Cli_printer.PMsg ("Found " ^ (string_of_int (List.length vms)) ^ " VMs")) ;
 		let host = match get_host_from_params rpc session_id params with
 			| None -> failwith "Host not found"
 			| Some (h,_) -> h in
-		let host_uuid = get_uuid_from_ref host in printer (Cli_printer.PMsg ("Destination host uuid: " ^ host_uuid)) ;
+		(* let host_uuid = get_uuid_from_ref host in printer (Cli_printer.PMsg ("Destination host uuid: " ^ host_uuid)) ; *)
 		try List.iter (fun vm ->
 				Client.VM.assert_can_boot_here rpc session_id
 					(vm.getref ()) host)
@@ -2523,46 +2513,56 @@ let is_storage_migrate printer rpc session_id params =
 			| _ ->
 				true (* ignore other errors for now *) in
 
-	if sxm_params_match ()
-	then printer (Cli_printer.PMsg "sxm params were set")
-	else printer (Cli_printer.PMsg "NO sxm params were set") ;
+	(* if sxm_params_match () *)
+	(* then printer (Cli_printer.PMsg "sxm params were set") *)
+	(* else printer (Cli_printer.PMsg "NO sxm params were set") ; *)
 
-	(* try sxm_params_match () || not (host_has_sr ()) *)
-	(* with _ -> true *)
 	sxm_params_match () || (is_pool_migrate () && (not (host_has_sr ())))
 
 let do_vm_migrate_sxm printer rpc session_id params options =
-	printer (Cli_printer.PMsg "Using the new cross-host, cross-pool, cross-everything codepath.");
-	let is_pool_migrate = is_pool_migrate printer rpc session_id params in
-	if is_pool_migrate
-	then printer (Cli_printer.PMsg "pool-migrate")
-	else printer (Cli_printer.PMsg "cross-pool-migrate") ;
+	let is_pool_migrate = is_pool_migrate rpc session_id params in
+
+	(* Debugging *)
+	(* if is_pool_migrate *)
+	(* then printer (Cli_printer.PMsg "pool-migrate") *)
+	(* else printer (Cli_printer.PMsg "cross-pool-migrate") ; *)
+
+	(* If we're doing an in pool storage motion migrate, we'll just
+	   pass through the remote calls to this pool. *)
 	let remote_rpc xml = if is_pool_migrate
 		then rpc xml
 		else Xmlrpc_client.(
-			let ip = List.assoc "remote-address" params
+			let ip = List.assoc "remote-master" params
 			and http = xmlrpc ~version:"1.0" "/" in
-			XML_protocol.rpc ~srcstr:"cli" ~dststr:"dst_xapi" ~transport:(SSL(SSL.make ~use_fork_exec_helper:false (), ip, 443)) ~http xml) in
+			XML_protocol.rpc ~srcstr:"cli" ~dststr:"dst_xapi"
+				~transport:(SSL(SSL.make ~use_fork_exec_helper:false (), ip, 443))
+				~http xml) in
 	let remote_session = if is_pool_migrate
 		then session_id
 		else
 			let username = List.assoc "remote-username" params
 			and password = List.assoc "remote-password" params in
 			Client.Session.login_with_password remote_rpc username password "1.3" in
+
 	finally
 		(fun () ->
 			let host, host_record =
-				(* TODO: replace this with get_host_from_params, and fail if no host selected *)
+				(* TODO: replace this with get_host_from_params, and
+				   fail if no host selected *)
 				let all = Client.Host.get_all_records remote_rpc remote_session in
 				if List.mem_assoc "host" params then begin
 					let x = List.assoc "host" params in
-					try
-						List.find (fun (_, h) -> h.API.host_hostname = x || h.API.host_name_label = x || h.API.host_uuid = x) all
+					try List.find (fun (_, h) ->
+						   h.API.host_hostname = x
+						|| h.API.host_name_label = x
+						|| h.API.host_uuid = x) all
 					with Not_found ->
 						failwith (Printf.sprintf "Failed to find host: %s" x)
 				end else begin
-					printer (Cli_printer.PMsg "No host specified; I will choose automatically");
-					List.hd all
+					let dest = List.hd all in
+					(* let dest_uuid = (snd dest).API.host_uuid in *)
+					(* printer (Cli_printer.PMsg ("No host specified; choosing " ^ dest_uuid)); *)
+					dest
 				end in
 
 			let network, network_record =
@@ -2570,16 +2570,21 @@ let do_vm_migrate_sxm printer rpc session_id params options =
 				if List.mem_assoc "remote-network" params then begin
 					let x = List.assoc "remote-network" params in
 					try
-						List.find (fun (_, net) -> net.API.network_bridge = x || net.API.network_name_label = x || net.API.network_uuid = x) all
+						List.find (fun (_, net) ->
+							   net.API.network_bridge = x
+							|| net.API.network_name_label = x
+							|| net.API.network_uuid = x) all
 					with Not_found ->
 						failwith (Printf.sprintf "Failed to find network: %s" x)
 				end else begin
-					printer (Cli_printer.PMsg "No network specified; I will try to find the remote host management network");
+					(* printer (Cli_printer.PMsg *)
+					(* 	"No network specified; using the remote host management network"); *)
 					let pifs = host_record.API.host_PIFs in
 					let management_pifs = List.filter (fun pif ->
 						Client.PIF.get_management remote_rpc remote_session pif) pifs in
-					if List.length management_pifs = 0 then
-						failwith (Printf.sprintf "Could not find management PIF on host %s" (host_record.API.host_uuid));
+					if management_pifs = []
+					then failwith (Printf.sprintf "Could not find management PIF on host %s"
+						               (host_record.API.host_uuid));
 					let pif = List.hd management_pifs in
 					let net = Client.PIF.get_network remote_rpc remote_session pif in
 					(net, Client.Network.get_record remote_rpc remote_session net)
@@ -2596,12 +2601,13 @@ let do_vm_migrate_sxm printer rpc session_id params options =
 				vdi,sr) (read_map_params "vdi" params) in
 
 			let default_sr =
-				if List.mem_assoc "default-sr-uuid" params
-				then let sr_uuid = List.assoc "default-sr-uuid" params in
+				if List.mem_assoc "destination-sr-uuid" params
+				then let sr_uuid = List.assoc "destination-sr-uuid" params in
 					 try Some (Client.SR.get_by_uuid remote_rpc remote_session sr_uuid)
 					 with _ -> None
 				else try let pools = Client.Pool.get_all remote_rpc remote_session in
-						 Some (Client.Pool.get_default_SR remote_rpc remote_session (List.hd pools))
+						 Some (Client.Pool.get_default_SR remote_rpc remote_session
+								   (List.hd pools))
 				     with _ -> None in
 
 			let vdi_map = match default_sr with
@@ -2610,31 +2616,55 @@ let do_vm_migrate_sxm printer rpc session_id params options =
 					let vms = select_vms rpc session_id params
 						( "host" :: "host-uuid" :: "host-name" :: "live"
 						  :: vm_migrate_sxm_params ) in
+					if vms = [] then failwith "No matching VMs found" ;
 					let vbds = Client.VM.get_VBDs rpc session_id ((List.hd vms).getref ())  in
-					let vdis = List.map (fun vbd -> Client.VBD.get_VDI rpc session_id vbd) vbds in
+					let vdis = List.map
+						(fun vbd -> Client.VBD.get_VDI rpc session_id vbd) vbds in
 					List.map (fun vdi ->
 						if List.mem_assoc vdi vdi_map
 						then (vdi, List.assoc vdi vdi_map)
 						else (vdi, default_sr)
 					) vdis in
 
+			(* printer (Cli_printer.PMsg "VDI-SR mapping:") ; *)
+			(* List.iter (function (vdi,sr) -> *)
+			(* 	printer (Cli_printer.PMsg (Printf.sprintf "VDI %s -> SR %s" *)
+			(* 								   (Client.VDI.get_uuid rpc session_id vdi) *)
+			(* 								   (Client.SR.get_uuid remote_rpc remote_session sr)))) *)
+			(* 	vdi_map ; *)
+
 			let params = List.filter (fun (s,_) -> if String.length s < 5 then true
 				else let start = String.sub s 0 4 in start <> "vif:" && start <> "vdi:") params in
-			printer (Cli_printer.PMsg (Printf.sprintf "Will migrate to remote host: %s, using remote network: %s" host_record.API.host_name_label network_record.API.network_name_label));
-			let token = Client.Host.migrate_receive remote_rpc remote_session host network options in
-			printer (Cli_printer.PMsg (Printf.sprintf "Received token: [ %s ]" (String.concat "; " (List.map (fun (k, v) -> k ^ ":" ^ v) token))));
+
+			(* printer (Cli_printer.PMsg *)
+			(* 			 (Printf.sprintf "Will migrate to remote host: %s, using remote network: %s" *)
+			(* 				  host_record.API.host_name_label network_record.API.network_name_label)); *)
+
+			let token = Client.Host.migrate_receive
+				remote_rpc remote_session host network options in
+
+			(* printer (Cli_printer.PMsg *)
+			(* 			 (Printf.sprintf "Received token: [ %s ]" *)
+			(* 				  (String.concat "; " (List.map (fun (k, v) -> k ^ ":" ^ v) token)))); *)
+
 			ignore (do_vm_op ~include_control_vms:true ~multiple:false printer rpc session_id
 					   (fun vm -> Client.VM.migrate_send rpc session_id
 						   (vm.getref ()) token true vdi_map vif_map options)
 					   params
-					   ["host"; "host-uuid"; "host-name"; "live"; "remote-address";
+					   ["host"; "host-uuid"; "host-name"; "live"; "remote-master"; "destination-sr-uuid";
 						"remote-username"; "remote-password"; "remote-network"; "vdi"; "vif" ])
 		)
 		(fun () ->
+			(* Only log out if we've created a new session on the remote *)
 			if not is_pool_migrate
 			then Client.Session.logout remote_rpc remote_session)
 
 let vm_migrate printer rpc session_id params =
+	(* Check up front that the VM exists *)
+	let vms = select_vms rpc session_id params
+		( "host" :: "host-uuid" :: "host-name" :: "live" :: vm_migrate_sxm_params ) in
+	if vms = [] then failwith "No matching VMs found" ;
+
 	(* Hack to match host-uuid and host-name for backwards compatibility *)
 	let params = List.map (fun (k, v) ->
 		if (k = "host-uuid") || (k = "host-name")
@@ -2643,11 +2673,8 @@ let vm_migrate printer rpc session_id params =
 	let options = List.map_assoc_with_key
 		(string_of_bool +++ bool_of_string)
 		(List.restrict_with_default "false" ["force"; "live"] params) in
-	(* If we specify all of: remote-address, remote-username, remote-password
-	   then we're using the new codepath *)
-	if (* List.mem_assoc "remote-address" params && (List.mem_assoc "remote-username" params) *)
-	   (* 	&& (List.mem_assoc "remote-password" params) *)
-		is_storage_migrate printer rpc session_id params
+
+	if is_storage_migrate printer rpc session_id params
 	then do_vm_migrate_sxm printer rpc session_id params options
 	else begin
 		if not (List.mem_assoc "host" params) then failwith "No destination host specified";
