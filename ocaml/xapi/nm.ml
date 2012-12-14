@@ -142,7 +142,6 @@ let create_bond ~__context bond mtu =
 				then []
 				else ["rebalance-interval", "1800000"]
 			and lacp_timeout = get_prop_assoc_if_mode `lacp "lacp-time"
-			and lacp_actor_key = get_prop_assoc_if_mode `lacp "lacp-actor-key"
 			and lacp_aggregation_key = get_prop_assoc_if_mode `lacp "lacp-aggregation-key"
 			in
 			let props = [
@@ -154,7 +153,6 @@ let create_bond ~__context bond mtu =
 				"hashing-algorithm", hashing_algorithm;
 			] @ rebalance_interval
 			  @ lacp_timeout
-			  @ lacp_actor_key
 			  @ lacp_aggregation_key in
 			let overrides = List.filter_map (fun (k, v) ->
 				if String.startswith "bond-" k then

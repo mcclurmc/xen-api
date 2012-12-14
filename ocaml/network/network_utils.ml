@@ -735,24 +735,32 @@ module Ovs = struct
 			 "use_carrier", "other-config:bond-detect-mode";
 			 "rebalance-interval", "other-config:bond-rebalance-interval";])
 		and extra_args = List.flatten (List.map get_prop
-			["lacp-time", "other-config:lacp-time";
-			 "lacp-aggregation-key", "other-config:lacp-aggregation-key";
+			["lacp-time", "other-config:lacp-time";])
+		and per_iface_args = List.flatten (List.map get_prop
+			["lacp-aggregation-key", "other-config:lacp-aggregation-key";
 			 "lacp-actor-key", "other-config:lacp-actor-key";])
 		and other_args = List.filter_map (fun (k, v) ->
 			if List.mem k known_props then None
 			else Some (Printf.sprintf "other-config:\"%s\"=\"%s\""
 			             (String.escaped ("bond-" ^ k)) (String.escaped v))
 		) properties in
-		mode_args @ extra_args_legacy @ extra_args @ other_args
+		(mode_args @ extra_args_legacy @ extra_args @ other_args, per_iface_args)
 
 	let create_bond ?mac name interfaces bridge properties =
-		let args = make_bond_properties name properties in
+		let args, per_iface_args = make_bond_properties name properties in
 		let mac_args = match mac with
 			| None -> []
 			| Some mac -> ["--"; "set"; "port"; name; "MAC=\"" ^ (String.escaped mac) ^ "\""]
 		in
+		let per_iface_args =
+			List.flatten
+				 (List.map
+						(fun iface ->
+							["--"; "set"; "interface"; iface ] @ per_iface_args)
+						interfaces)
+		in
 		vsctl ~log:true (["--"; "--may-exist"; "add-bond"; bridge; name] @ interfaces @
-			mac_args @ args)
+			mac_args @ args @ per_iface_args)
 
 	let get_fail_mode bridge =
 		vsctl ["get-fail-mode"; bridge]
