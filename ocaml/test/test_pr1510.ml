@@ -6,59 +6,59 @@ open Network_utils
 (* Example of using OUnitDiff with a String Set *)
 module StringDiff =
 struct
-  type t = string
-  let compare = String.compare
-  let pp_printer = Format.pp_print_string
-  let pp_print_sep = OUnitDiff.pp_comma_separator
+	type t = string
+	let compare = String.compare
+	let pp_printer = Format.pp_print_string
+	let pp_print_sep = OUnitDiff.pp_comma_separator
 end
 
 module OSSet = OUnitDiff.SetMake(StringDiff)
 
-let test_lacp_timeout_prop () =
-	let props = Ovs.make_bond_properties "bond_test"
-		[ "mode", "lacp" ;
-			"lacp-time", "slow" ;
-			(* "hashing-algorithm", "src_mac" *) ]
-	and correct =
+let run_bond_prop_test props c_props c_per_iface =
+	let props, per_iface_props =
+		Ovs.make_bond_properties "bond_test" props in
+
+	let propset = OSSet.of_list props in
+	let correctset = OSSet.of_list c_props in
+	OSSet.assert_equal correctset propset ;
+
+	let propset = OSSet.of_list per_iface_props in
+	let correctset = OSSet.of_list c_per_iface in
+	OSSet.assert_equal correctset propset
+
+let test_lacp_timeout_prop arg () =
+	let props =	[ "mode", "lacp" ; "lacp-time", arg ; ]
+	and correct_props =
 		[ "lacp=active";
 			"bond_mode=balance-tcp";
-			"other-config:lacp-time=slow" ]
-	in
+			Printf.sprintf "other-config:lacp-time=%s" arg ]
+	and correct_iface_props = [ ] in
 
-	let propset = OSSet.of_list props in
-	let correctset = OSSet.of_list correct in
-	OSSet.assert_equal correctset propset
+	run_bond_prop_test props correct_props correct_iface_props
 
-let test_lacp_actor_key () =
-	let props = Ovs.make_bond_properties "bond_test"
-		[ "mode", "lacp" ; "lacp-actor-key", "slow" ; "hashing-algorithm", "balance-tcp" ]
-	and correct = [
+let test_lacp_aggregation_key arg () =
+	let props, per_iface_props = Ovs.make_bond_properties "bond_test"
+		[ "mode", "lacp" ; "lacp-aggregation-key", arg ]
+	and correct_props = [
 		"lacp=active";
 		"bond_mode=balance-tcp";
-		"other-config:lacp-actor-key=slow"
+	]
+	and correct_iface_props = [
+		Printf.sprintf "other-config:lacp-aggregation-key=%s" arg ;
 	] in
 
 	let propset = OSSet.of_list props in
-	let correctset = OSSet.of_list correct in
-	OSSet.assert_equal correctset propset
+	let correctset = OSSet.of_list correct_props in
+	OSSet.assert_equal correctset propset ;
 
-let test_lacp_aggregation_key () =
-	let props = Ovs.make_bond_properties "bond_test"
-		[ "mode", "lacp" ; "lacp-aggregation-key", "42" ]
-	and correct = [
-		"lacp=active";
-		"bond_mode=balance-tcp";
-		"other-config:lacp-aggregation-key=42"
-	] in
-
-	let propset = OSSet.of_list props in
-	let correctset = OSSet.of_list correct in
+	let propset = OSSet.of_list per_iface_props in
+	let correctset = OSSet.of_list correct_iface_props in
 	OSSet.assert_equal correctset propset
 
 let suite =
 	"pr1510_suite" >:::
 		[
-			"test_lacp_timeout_prop" >:: test_lacp_timeout_prop;
-			"test_lacp_actor_key" >:: test_lacp_actor_key;
-			"test_lacp_aggregation_key" >:: test_lacp_aggregation_key;
+			"test_lacp_timeout_prop(slow)" >:: test_lacp_timeout_prop "slow";
+			"test_lacp_timeout_prop(fast)" >:: test_lacp_timeout_prop "fast";
+			"test_lacp_aggregation_key(42)" >:: test_lacp_aggregation_key "42";
 		]
