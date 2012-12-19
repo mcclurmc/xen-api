@@ -1,5 +1,6 @@
 (* Test cases for PR-1510 *)
 
+open Fun
 open OUnit
 open Network_utils
 
@@ -55,10 +56,27 @@ let test_lacp_aggregation_key arg () =
 	let correctset = OSSet.of_list correct_iface_props in
 	OSSet.assert_equal correctset propset
 
+module OVS_Cli_test = struct
+	include Ovs.Cli
+	let vsctl ?(log=true) args =
+		List.iter (fun a -> print_endline a) args ;
+		"ok."
+end
+
+let test_lacp_aggregation_key_vsctl arg () =
+	let module Ovs = Ovs.Make(OVS_Cli_test) in
+	let bond = "bond0"
+	and ifaces = ["eth0"; "eth1"]
+	and bridge = "xapi1"
+	and props = [ "mode", "lacp" ; "lacp-aggregation-key", arg ]
+	in
+	Ovs.create_bond bond ifaces bridge props |> ignore
+
 let suite =
 	"pr1510_suite" >:::
 		[
 			"test_lacp_timeout_prop(slow)" >:: test_lacp_timeout_prop "slow";
 			"test_lacp_timeout_prop(fast)" >:: test_lacp_timeout_prop "fast";
 			"test_lacp_aggregation_key(42)" >:: test_lacp_aggregation_key "42";
+			"test_lacp_aggregation_key_vsctl" >:: test_lacp_aggregation_key_vsctl "42";
 		]
