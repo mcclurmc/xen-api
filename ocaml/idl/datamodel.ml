@@ -18,7 +18,7 @@ open Datamodel_types
 (* IMPORTANT: Please bump schema vsn if you change/add/remove a _field_.
               You do not have to bump vsn if you change/add/remove a message *)
 let schema_major_vsn = 5
-let schema_minor_vsn = 66
+let schema_minor_vsn = 67
 
 (* Historical schema versions just in case this is useful later *)
 let rio_schema_major_vsn = 5
@@ -42,9 +42,12 @@ let cowley_release_schema_minor_vsn = 61
 let boston_release_schema_major_vsn = 5
 let boston_release_schema_minor_vsn = 63
 
+let tampa_release_schema_major_vsn = 5
+let tampa_release_schema_minor_vsn = 66
+
 (* the schema vsn of the last release: used to determine whether we can upgrade or not.. *)
-let last_release_schema_major_vsn = boston_release_schema_major_vsn
-let last_release_schema_minor_vsn = boston_release_schema_minor_vsn
+let last_release_schema_major_vsn = tampa_release_schema_major_vsn
+let last_release_schema_minor_vsn = tampa_release_schema_minor_vsn
 
 (** Bindings for currently specified releases *)
 
@@ -160,6 +163,12 @@ let get_product_releases in_product_since =
       [] -> raise UnspecifiedRelease
     | x::xs -> if x=in_product_since then "closed"::x::xs else go_through_release_order xs
   in go_through_release_order release_order
+
+let clearwater_release =
+	{ internal=get_product_releases rel_clearwater
+	; opensource=get_oss_releases None
+	; internal_deprecated_since=None
+	}
 
 let tampa_release =
 	{ internal=get_product_releases rel_tampa
