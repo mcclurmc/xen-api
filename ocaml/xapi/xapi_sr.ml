@@ -72,18 +72,22 @@ let valid_operations ~__context record _ref' : table =
 		  Sm.capabilities_of_driver record.Db_actions.sR_type
       with Sm.Unknown_driver _ ->
 		  (* then look to see if this supports the SMAPIv2 *)
-		  Smint.parse_capabilities (Storage_mux.capabilities_of_sr _ref)
+		  Smint.parse_capabilities (List.map fst (Storage_mux.capabilities_of_sr _ref))
   in
   info "SR %s has capabilities: [ %s ]" _ref (String.concat ", " (List.map Smint.string_of_capability sm_caps));
 
   (* Then filter out the operations we don't want to see for the magic tools SR *)
   let sm_caps = 
     if Helpers.is_tools_sr ~__context ~sr:_ref'
-    then List.filter (fun cap -> not(List.mem cap [ Smint.Vdi_create; Smint.Vdi_delete ])) sm_caps
+    then List.filter
+		(fun cap -> not(List.mem (fst cap) [ Smint.Vdi_create; Smint.Vdi_delete ]))
+		sm_caps
     else sm_caps in
 
   let forbidden_by_backend = 
-    List.filter (fun op -> List.mem_assoc op sm_cap_table && not(List.mem (List.assoc op sm_cap_table) sm_caps))
+    List.filter (fun op ->
+		List.mem_assoc op sm_cap_table &&
+		not(List.mem_assoc (List.assoc op sm_cap_table) sm_caps))
       all_ops in
   set_errors Api_errors.sr_operation_not_supported [ _ref ] forbidden_by_backend;
 
@@ -596,7 +600,7 @@ let assert_supports_database_replication ~__context ~sr =
 		end) pbds;
 	(* Check the exported capabilities of the SR's SM plugin *)
 	let srtype = Db.SR.get_type ~__context ~self:sr in
-	if not (List.mem Smint.Sr_metadata (Sm.capabilities_of_driver srtype))
+	if not (List.mem_assoc Smint.Sr_metadata (Sm.capabilities_of_driver srtype))
 	then raise (Api_errors.Server_error (Api_errors.sr_operation_not_supported, [Ref.string_of sr]))
 
 (* Metadata replication to SRs *)
