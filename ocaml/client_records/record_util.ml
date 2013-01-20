@@ -411,8 +411,8 @@ let bool_of_string s =
 		|_-> raise (Record_failure ("Expected 'true','yes','false','no', got "^s))
 
 (* string_to_string_map_to_string *)
-let s2sm_to_string sep x =
-  String.concat sep (List.map (fun (a,b) -> a^": "^b) x)
+let s2sm_to_string sep ?(join=": ") x =
+  String.concat sep (List.map (fun (a,b) -> a^join^b) x)
 
 (* string to blob ref map to string *)
 let s2brm_to_string get_uuid_from_ref sep x =
