@@ -242,12 +242,6 @@ let requirements_of_mode = function
 			default_value = "";
 			is_valid_value = (fun i -> try ignore (int_of_string i); true with _ -> false);
 		};
-		(* XXX Does lacp-actor-key exist, or is it set with aggregator-key? *)
-		{
-			name = "lacp-actor-key";
-			default_value = "";
-			is_valid_value = (fun i -> try ignore (int_of_string i); true with _ -> false);
-		};
 	]
 	| _ -> []
 
