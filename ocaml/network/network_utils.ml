@@ -697,7 +697,7 @@ module Ovs = struct
 	let make_bond_properties name properties =
 		let known_props = ["mode"; "hashing-algorithm"; "updelay"; "downdelay";
 		                   "miimon"; "use_carrier"; "rebalance-interval";
-		                   "lacp-time"; "lacp-aggregation-key"; "lacp-actor-key"] in
+		                   "lacp-time"; "lacp-aggregation-key"] in
 		let mode_args =
 			let mode = if List.mem_assoc "mode" properties
 				then List.assoc "mode" properties else "balance-slb" in
