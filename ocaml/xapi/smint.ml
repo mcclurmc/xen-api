@@ -96,7 +96,9 @@ let parse_capabilities strings =
 					| [cs] -> (cs, 1) (* default version *)
 					| [cs; vs]
 					| cs :: vs :: _ ->
-						try (cs, int_of_string vs)
+						try
+							let v = int_of_string vs in
+							(cs, if v < 1 then 1 else v)
 						with _ ->
 							debug "SR.capability %s has bad version %s, defaulting to 1" cs vs;
 							(cs, 1))
