@@ -32,7 +32,7 @@ let test_lacp_timeout_prop arg () =
 	and correct_props =
 		[ "lacp=active";
 			"bond_mode=balance-tcp";
-			Printf.sprintf "other-config:lacp-time=%s" arg ]
+			Printf.sprintf "other-config:lacp-time=\"%s\"" arg ]
 	and correct_iface_props = [ ] in
 
 	run_bond_prop_test props correct_props correct_iface_props
@@ -45,7 +45,7 @@ let test_lacp_aggregation_key arg () =
 		"bond_mode=balance-tcp";
 	]
 	and correct_iface_props = [
-		Printf.sprintf "other-config:lacp-aggregation-key=%s" arg ;
+		Printf.sprintf "other-config:lacp-aggregation-key=\"%s\"" arg ;
 	] in
 
 	let propset = OSSet.of_list props in
@@ -93,6 +93,9 @@ let test_lacp_defaults_bond_create () =
 	and default_props = Xapi_bond.__test_add_lacp_defaults [ "mode", "lacp" ]
 	in
 	Ovs.create_bond bond ifaces bridge default_props |> ignore;
+	(* should not have any strings which contain lacp-aggregation-key *)
+	(*assert_bool "no default property for lacp_aggregation_key"
+		List.exists (fun s -> String.*)
 	List.iter
 		(fun arg ->
 			assert_bool "key=value argument pairs can't have missing values"
