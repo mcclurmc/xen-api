@@ -42,7 +42,7 @@ let create_from_query_result ~__context q =
 		 ~version:q.version
 		 ~required_api_version:q.required_api_version
 		 ~capabilities:(List.map fst q.features)
-		 ~versioned_capabilities:q.features
+		 ~features:q.features
 		 ~configuration:q.configuration
 		 ~other_config:[]
 		 ~driver_filename:(Sm_exec.cmd_name q.driver)
@@ -65,10 +65,10 @@ let update_from_query_result ~__context (self, r) query_result =
 	if r.API.sM_required_api_version <> query_result.required_api_version
 	then Db.SM.set_required_api_version ~__context ~self ~value:query_result.required_api_version;
 	if (r.API.sM_capabilities <> (List.map fst query_result.features) ||
-	    r.API.sM_versioned_capabilities <> query_result.features)
+	    r.API.sM_features <> query_result.features)
 	then begin
 		Db.SM.set_capabilities ~__context ~self ~value:(List.map fst query_result.features);
-		Db.SM.set_versioned_capabilities ~__context ~self ~value:query_result.features;
+		Db.SM.set_features ~__context ~self ~value:query_result.features;
 	end;
 	if r.API.sM_configuration <> query_result.configuration
 	then Db.SM.set_configuration ~__context ~self ~value:query_result.configuration;
