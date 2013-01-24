@@ -77,21 +77,22 @@ let valid_operations ~__context record _ref' : table =
   *)
 
   (* First consider the backend SM features *)
-  let sm_caps = features_of_sr record in
+  let sm_features = features_of_sr record in
 
-  info "SR %s has features: [ %s ]" _ref (String.concat ", " (List.map Smint.string_of_capability sm_caps));
+  info "SR %s has features: [ %s ]" _ref (String.concat ", " (List.map Smint.string_of_capability sm_features));
 
   (* Then filter out the operations we don't want to see for the magic tools SR *)
-  let sm_caps =
+  let sm_features =
     if Helpers.is_tools_sr ~__context ~sr:_ref'
     then List.filter
-		(fun cap -> not(List.mem (fst cap) [ Smint.Vdi_create; Smint.Vdi_delete ]))
-		sm_caps
-    else sm_caps in
+		(* (fun cap -> not(List.mem (fst cap) [ Smint.Vdi_create; Smint.Vdi_delete ])) *)
+		(fun feat -> not Smint.(has_feature feat [ Vdi_create, 0; Vdi_delete, 0 ]))
+		sm_features
+    else sm_features in
 
   let forbidden_by_backend = 
     List.filter (fun op -> List.mem_assoc op sm_cap_table
-	                       && not (List.mem_assoc (List.assoc op sm_cap_table) sm_caps))
+	                       && not (Smint.has_capability (List.assoc op sm_cap_table) sm_features))
       all_ops in
   set_errors Api_errors.sr_operation_not_supported [ _ref ] forbidden_by_backend;
 
