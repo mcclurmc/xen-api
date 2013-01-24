@@ -50,7 +50,7 @@ type table = (API.storage_operations, ((string * (string list)) option)) Hashtbl
 
 let capabilities_of_sr_internal ~_type ~uuid =
 	try
-		Sm.capabilities_of_driver _type
+		Sm.features_of_driver _type
 	with Sm.Unknown_driver _ ->
 		(* then look to see if this supports the SMAPIv2 *)
 		Smint.parse_capabilities (List.map fst (Storage_mux.capabilities_of_sr uuid))
