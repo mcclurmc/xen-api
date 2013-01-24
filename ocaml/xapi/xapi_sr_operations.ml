@@ -48,15 +48,15 @@ let sm_cap_table =
 
 type table = (API.storage_operations, ((string * (string list)) option)) Hashtbl.t
 
-let capabilities_of_sr_internal ~_type ~uuid =
+let features_of_sr_internal ~_type ~uuid =
 	try
 		Sm.features_of_driver _type
 	with Sm.Unknown_driver _ ->
 		(* then look to see if this supports the SMAPIv2 *)
-		Smint.parse_features (List.map fst (Storage_mux.capabilities_of_sr uuid))
+		Smint.parse_features (List.map fst (Storage_mux.features_of_sr uuid))
 
-let capabilities_of_sr record =
-	capabilities_of_sr_internal record.Db_actions.sR_type record.Db_actions.sR_uuid
+let features_of_sr record =
+	features_of_sr_internal record.Db_actions.sR_type record.Db_actions.sR_uuid
 
 (** Returns a table of operations -> API error options (None if the operation would be ok) *)
 let valid_operations ~__context record _ref' : table = 
@@ -76,10 +76,10 @@ let valid_operations ~__context record _ref' : table =
      Multiple simultaneous PBD.unplug operations are ok.
   *)
 
-  (* First consider the backend SM capabilities *)
-  let sm_caps = capabilities_of_sr record in
+  (* First consider the backend SM features *)
+  let sm_caps = features_of_sr record in
 
-  info "SR %s has capabilities: [ %s ]" _ref (String.concat ", " (List.map Smint.string_of_capability sm_caps));
+  info "SR %s has features: [ %s ]" _ref (String.concat ", " (List.map Smint.string_of_capability sm_caps));
 
   (* Then filter out the operations we don't want to see for the magic tools SR *)
   let sm_caps =

@@ -81,7 +81,7 @@ let check_operation_error ~__context ?(sr_records=[]) ?(pbd_records=[]) ?(vbd_re
 			(* NB RO vs RW sharing checks are done in xapi_vbd.ml *)
 
 			let sr_uuid = Db.SR.get_uuid ~__context ~self:sr in
-			let sm_caps = Xapi_sr_operations.capabilities_of_sr_internal ~_type:sr_type ~uuid:sr_uuid in
+			let sm_caps = Xapi_sr_operations.features_of_sr_internal ~_type:sr_type ~uuid:sr_uuid in
 
 			let any_vbd p = List.fold_left (||) false (List.map p my_vbd_records) in
 			if not operation_can_be_performed_live && (any_vbd is_active)
@@ -414,7 +414,7 @@ let snapshot ~__context ~vdi ~driver_params =
 				snapshot_and_clone C.VDI.snapshot ~__context ~vdi ~driver_params
 			with Storage_interface.Unimplemented _ ->
 				(* CA-28598 *)
-				debug "Backend reported not implemented despite it offering the capability; assuming this is an LVHD upgrade issue";
+				debug "Backend reported not implemented despite it offering the feature; assuming this is an LVHD upgrade issue";
 				raise (Api_errors.Server_error(Api_errors.sr_requires_upgrade, [ Ref.string_of (Db.VDI.get_SR ~__context ~self:vdi) ]))
 		) in
 	(* Record the fact this is a snapshot *)
@@ -614,7 +614,7 @@ let set_metadata_of_pool ~__context ~self ~value =
 let set_on_boot ~__context ~self ~value =
 	let sr = Db.VDI.get_SR ~__context ~self in
 	let sr_record = Db.SR.get_record_internal ~__context ~self:sr in
-	let sm_caps = Xapi_sr_operations.capabilities_of_sr sr_record in
+	let sm_caps = Xapi_sr_operations.features_of_sr sr_record in
 
 	if not (List.mem_assoc Smint.Vdi_reset_on_boot sm_caps) then
 		raise (Api_errors.Server_error(Api_errors.sr_operation_not_supported,[Ref.string_of sr]));
