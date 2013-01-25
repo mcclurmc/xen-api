@@ -234,7 +234,7 @@ let requirements_of_mode = function
 		};
 		{
 			name = "lacp-time";
-			default_value = Some "fast";
+			default_value = Some "slow";
 			is_valid_value = (fun str -> List.mem str ["fast"; "slow"]);
 		};
 		{
