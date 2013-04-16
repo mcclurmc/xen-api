@@ -255,13 +255,13 @@ let copy_vm_record ?(snapshot_info_record) ~__context ~vm ~disk_op ~new_name ~ne
 		| Disk_op_clone | Disk_op_copy _-> Ref.null
 		| Disk_op_snapshot | Disk_op_checkpoint -> all.Db_actions.vM_parent in
 
-  (* verify if this action is happening due to a VM protection policy *)
-  let is_snapshot_from_vmpp =
-      is_a_snapshot && (Xapi_vmpp.is_snapshot_from_vmpp ~__context)
-	in
+	(* verify if this action is happening due to a VM protection policy *)
+	let is_snapshot_from_vmpp =
+		is_a_snapshot && (Xapi_vmpp.is_snapshot_from_vmpp ~__context) in
 
-	(* We always reset the generation ID on VM.clone *)
-	let generation_id = Xapi_vm_helpers.fresh_genid () in
+	(* If the generation ID is present, we reset it on VM.clone *)
+	let generation_id =
+		Xapi_vm_helpers.fresh_genid_if_exists all.Db_actions.vM_generation_id in
 
 	(* create a new VM *)
 	Db.VM.create ~__context 

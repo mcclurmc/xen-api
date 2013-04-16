@@ -896,3 +896,13 @@ let vm_fresh_genid ~__context ~self =
 	debug "Refreshing GenID for VM %s to %s" uuid genid;
 	Db.VM.set_generation_id ~__context ~self ~value:genid ;
 	genid
+
+let fresh_genid_if_exists = function
+	| "" -> ""
+	| _  -> fresh_genid ()
+
+let vm_fresh_genid_if_exists ~__context ~self =
+	let genid = Db.VM.get_generation_id ~__context ~self in
+	if genid = ""
+	then ""
+	else vm_fresh_genid ~__context ~self
