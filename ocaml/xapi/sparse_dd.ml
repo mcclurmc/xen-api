@@ -4,7 +4,7 @@
 open Pervasiveext
 open Stringext
 open Listext
-open Zerocheck
+open Threadext
 
 let ( +* ) = Int64.add
 let ( -* ) = Int64.sub
@@ -17,12 +17,21 @@ let blocksize = 10L ** mib
 
 exception ShortWrite of int (* offset *) * int (* expected *) * int (* actual *)
 
+open Direct_io
+
+type substring = {
+  buf: Memory.t;
+  offset: int;
+  len: int
+}
+
 (* Consider a tunable quantum of non-zero'ness such that if we encounter
    a non-zero, we know we're going to incur the penalty of a seek/write
    and we may as well write a sizeable chunk at a time. *)
 let roundup x = 
 	let quantum = 16384 in
 	((x + quantum + quantum - 1) / quantum) * quantum
+
 
 (** The copying routine has inputs and outputs which both look like a 
     Unix file-descriptor *)
@@ -54,12 +63,12 @@ type stats = {
 (** Perform the data duplication ("DD") *)
 module DD(Input : IO)(Output : IO) = struct
 	let fold bat sparse input_op blocksize size f initial = 
-		let buf = String.create (Int64.to_int blocksize) in
+		let buf = Memory.alloc (Int64.to_int blocksize) in
 		let do_block acc (offset, this_chunk) =
 			input_op offset { buf = buf; offset = 0; len = Int64.to_int this_chunk };
-			begin match sparse with
-			| Some zero -> fold_over_nonzeros buf (Int64.to_int this_chunk) roundup (f offset) acc
-			| None -> f offset acc { buf = buf; offset = 0; len = Int64.to_int this_chunk }
+			begin (*match sparse with
+			| Some zero -> fold_over_nonzeros buf (Int64.to_int this_chunk) rounddown roundup (f offset) acc
+			| None ->*) f offset acc { buf = buf; offset = 0; len = Int64.to_int this_chunk }
 			end in
 		(* For each entry from the BAT, copy it as a sequence of sub-blocks *)
 		Bat.fold_left (fun acc b -> partition_into_blocks b blocksize do_block acc) initial bat
@@ -86,7 +95,7 @@ module DD(Input : IO)(Output : IO) = struct
 			Output.op dst (offset +* (Int64.of_int substr.offset)) substr in
 		let input_zero offset { buf = buf; offset = offset; len = len } =
 			for i = 0 to len - 1 do
-				buf.[offset + i] <- '\000'
+				Memory.set_byte buf (offset + i) '\000'
 			done in
 		(* Do any necessary pre-zeroing then do the real work *)
 		let sparse = if prezeroed then Some '\000' else None in
@@ -98,125 +107,21 @@ let blit src srcoff dst dstoff len =
 	(* Printf.printf "[%s](%d) -> [%s](%d) %d\n" "?" srcoff "?" dstoff len; *)
 	String.blit src srcoff dst dstoff len
 
-module String_reader = struct
-	type t = string
-	let op str stream_offset { buf = buf; offset = offset; len = len } = 
-		blit str (Int64.to_int stream_offset) buf offset len	
-end
-module String_writer = struct
-	type t = string
-	let op str stream_offset { buf = buf; offset = offset; len = len } = 
-		blit buf offset str (Int64.to_int stream_offset) len
-end
-
 (** A File interface implemented over open Unix files *)
 module File_reader = struct
-	type t = Unix.file_descr
+	type t = File.t
 	let op stream stream_offset { buf = buf; offset = offset; len = len } = 
-		let (_: int64) = Unix.LargeFile.lseek stream stream_offset Unix.SEEK_SET in
-		Unixext.really_read stream buf offset len 
+		File.seek stream stream_offset;
+		File.really_read stream buf offset len 
 end
 module File_writer = struct
-	type t = Unix.file_descr
+	type t = File.t
 	let op stream stream_offset { buf = buf; offset = offset; len = len } = 
-		let (_: int64) = Unix.LargeFile.lseek stream stream_offset Unix.SEEK_SET in
-		(* Printf.printf "Unix.write buf len %d; offset %d; len %d\n" (String.length buf) offset len; *)
-		let n = Unix.write stream buf offset len in
-		if n < len
-		then raise (ShortWrite(offset, len, n))
+		File.seek stream stream_offset;
+		File.really_write stream buf offset len
 end
 
-(** Marshals data across the network in chunks *)
-module Network_writer = struct
-	open Sparse_encoding
-	type t = Unix.file_descr
-
-	type url = {
-		host: string;
-		port: int;
-		auth: (string * string) option;
-		uri: string;
-		https: bool;
-	}
-
-	let url_of_string url = 
-		let host x = match String.split ':' x with
-		| host :: _ -> host
-		| _ -> failwith (Printf.sprintf "Failed to parse host: %s" x) in
-		let port x = match String.split ':' x with
-		| _ :: port :: _ -> Some (int_of_string port)
-		| _ -> None in
-		let uname_password_host_port x = match String.split '@' x with
-		| [ _ ] -> None, host x, port x
-		| [ uname_password; host_port ] -> 
-			begin match String.split ':' uname_password with 
-			| [ uname; password ] -> Some (uname, password), host host_port, port host_port
-			| _ -> failwith (Printf.sprintf "Failed to parse authentication substring: %s" uname_password)
-			end 
-		| _ -> failwith (Printf.sprintf "Failed to parse username password host and port: %s" x) in
-		match String.split '/' url with
-		| http_or_https :: "" :: x :: uri ->
-			let uname_password, host, port = uname_password_host_port x in
-			if not(List.mem http_or_https [ "https:"; "http:" ])
-			then failwith (Printf.sprintf "Unknown URL scheme: %s" http_or_https);
-			let https = String.startswith "https://" url in
-			let port = (match port with Some p -> p | None -> if https then 443 else 80) in
-			{ host = host; port = port; auth = uname_password; uri = "/" ^ (String.concat "/" uri); https = https }
-		| _ -> failwith (Printf.sprintf "Failed to parse URL: %s" url)
-
-	let open_url url f = 
-		let with_ssl url f = 
-			Printf.printf "connecting to %s:%d\n" url.host url.port;
-			let stunnel = Stunnel.connect url.host url.port in
-			finally
-			(fun () -> f stunnel.Stunnel.fd)
-			(fun () -> Stunnel.disconnect stunnel) in
-		let with_plaintext url f = 
-			let fd = Unixext.open_connection_fd url.host url.port in
-			finally
-			(fun () -> f fd)
-			(fun () -> Unix.close fd) in
-		let uri, query = Http.parse_uri url.uri in
-		let request = { Http.Request.m = Http.Put;
-				uri = uri;
-				query = query;
-				version = "1.0";
-				transfer_encoding = None;
-				content_length = None;
-				auth = Opt.map (fun (username, password) -> Http.Basic(username, password)) url.auth;
-				cookie = [ "chunked", "true" ];
-				task = None; subtask_of = None;
-				content_type = None;
-				user_agent = Some "sparse_dd/0.1";
-				close = true;
-				additional_headers = [];
-				body = None
-		} in
-		try
-			if url.https
-			then with_ssl url (fun fd -> Http_client.rpc fd request f)
-			else with_plaintext url (fun fd -> Http_client.rpc fd request f)
-		with Http_client.Http_error("401", _) as e ->
-			Printf.printf "HTTP 401 Unauthorized\n";
-			raise e
-
-	let op stream stream_offset { buf = buf; offset = offset; len = len } =
-		let copy = String.create len in
-		String.blit buf offset copy 0 len;
-		let x = { Chunk.start = stream_offset; data = copy } in
-		Chunk.marshal stream x
-
-	let close stream = Chunk.marshal stream { Chunk.start = 0L; data = "" }
-end
-
-(** An implementation of the DD algorithm over strings *)
-module String_copy = DD(String_reader)(String_writer)
-
-(** An implementation of the DD algorithm over Unix files *)
 module File_copy = DD(File_reader)(File_writer)
-
-(** An implementatino of the DD algorithm from Unix files to a Network socket *)
-module Network_copy = DD(File_reader)(Network_writer)
 
 (** [file_dd ?progress_cb ?size ?bat prezeroed src dst]
     If [size] is not given, will assume a plain file and will use st_size from Unix.stat.
@@ -232,26 +137,18 @@ let file_dd ?(progress_cb = (fun _ -> ())) ?size ?bat prezeroed src dst =
 	let size = match size with
 	| None -> (Unix.LargeFile.stat src).Unix.LargeFile.st_size 
 	| Some x -> x in
-	let ifd = Unix.openfile src [ Unix.O_RDONLY ] 0o600 in
+	let ifd = File.openfile src 0o600 in
 	if String.startswith "http:" dst || String.startswith "https:" dst then begin
-		(* Network copy *)
-		Network_writer.open_url (Network_writer.url_of_string dst)
-		(fun _ ofd ->
-			Printf.printf "\nWriting chunked encoding to fd: %d\n" (Unixext.int_of_file_descr ofd);
-			let stats = Network_copy.copy progress_cb bat prezeroed ifd ofd blocksize size in
-			Printf.printf "\nSending final chunk\n";
-			Network_writer.close ofd;			
-			Printf.printf "Waiting for connection to close\n";
-			(try let tmp = " " in Unixext.really_read ofd tmp 0 1 with End_of_file -> ());
-			Printf.printf "Connection closed\n";
-			stats)
+		failwith "networking disabled"
 	end else begin
 		let ofd = Unix.openfile dst [ Unix.O_WRONLY; Unix.O_CREAT ] 0o600 in
 	 	(* Make sure the output file has the right size *)
 		let (_: int64) = Unix.LargeFile.lseek ofd (size -* 1L) Unix.SEEK_SET in
 		let (_: int) = Unix.write ofd "\000" 0 1 in
 		let (_: int64) = Unix.LargeFile.lseek ofd 0L Unix.SEEK_SET in
-		Printf.printf "Copying\n";
+		Unix.close ofd;
+		let ofd = File.openfile dst 0o600 in
+		Printf.printf "Copying";
 		File_copy.copy progress_cb bat prezeroed ifd ofd blocksize size
 	end 
 
@@ -275,51 +172,6 @@ let make_random size zero nonzero =
 		offset', if bit then (offset, offset' - offset) :: acc else acc) (0, []) bits) in
 	let bat = Bat.of_list (List.map (fun (x, y) -> Int64.of_int x, Int64.of_int y) bat) in
 	result, Some bat
-
-(** [test_dd (input, bat) ignore_bat prezeroed zero nonzero] uses the DD algorithm to make a copy of
-    the string [input]. 
-    If [ignore_bat] is true then the [bat] is ignored (as if none were available).
-    If [prezeroed] is true then the output is created full of [zero], otherwise [nonzero].
-    The resulting string is compared to the original and if not idential, an exception is raised.
- *)
-let test_dd (input, bat) ignore_bat prezeroed zero nonzero = 
-	let size = String.length input in
-	let blocksize = Int64.of_int (size / 100) in
-	let output = String.make size (if prezeroed then zero else nonzero) in
-	try
-
-		let stats = String_copy.copy (fun _ -> ()) bat prezeroed input output blocksize (Int64.of_int size) in
-		assert (String.compare input output = 0);
-		stats
-	with e ->
-		Printf.printf "Exception: %s" (Printexc.to_string e);
-		let make_visible x = 
-			for i = 0 to String.length x - 1 do
-				if x.[i] = '\000' 
-				then x.[i] <- 'z'
-				else x.[i] <- 'a';
-			done in
-		make_visible input;
-		make_visible output;
-		failwith (Printf.sprintf "input = [%s]; output = [%s]" input output)
-
-(** Generates lots of random strings and makes copies with the DD algorithm, checking that the copies are identical *)
-let test_lots_of_strings () =
-	let n = 1000 and m = 100000 in
-	let writes = ref 0 and bytes = ref 0L in
-	for i = 0 to n do
-		if i mod 100 = 0 then (Printf.printf "i = %d\n" i; flush stdout);
-		List.iter (fun ignore_bat ->
-			List.iter (fun prezeroed ->
-				let stats = test_dd (make_random m '\000' 'a') ignore_bat prezeroed '\000' 'a' in
-				writes := !writes + stats.writes;
-				bytes := !bytes +* stats.bytes
-			) [ true; false ]
-		) [ true; false ]
-	done;
-	Printf.printf "Tested %d random strings of length %d using all 4 combinations of ignore_bat, prezeroed\n" n m;
-	Printf.printf "Total writes: %d\n" !writes;
-	Printf.printf "Total bytes: %Ld\n" !bytes
 
 (** [vhd_of_device path] returns (Some vhd) where 'vhd' is the vhd leaf backing a particular device [path] or None.
     [path] may either be a blktap2 device *or* a blkfront device backed by a blktap2 device. If the latter then
@@ -470,8 +322,11 @@ let _ =
 			      "     into /dev/xvdb under the assumption that /dev/xvdb contains identical data";
 			      "     to /dev/xvdb."; ]);
  	if !test then begin
+		failwith "testing disabled";
+(*
 		test_lots_of_strings ();
 		exit 0
+*)
 	end;
 	if !src = None || !dest = None || !size = (-1L) then begin
 		Printf.fprintf stderr "Must have -src -dest and -size arguments\n";
