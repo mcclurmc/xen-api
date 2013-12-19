@@ -12,6 +12,7 @@
  * GNU Lesser General Public License for more details.
  *)
 
+open Fun
 open OUnit
 
 let base_suite =

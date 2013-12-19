@@ -15,6 +15,7 @@
 module D = Debug.Make(struct let name="xapi" end)
 open D
 
+open Fun
 open OPasswd.Common
 
 let superuser = "root"
