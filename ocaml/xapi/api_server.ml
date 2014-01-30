@@ -115,6 +115,32 @@ let is_himn_req req =
 		| None -> false)
 	| None -> false
 
+(* XXX *)
+let debug_vm_guest_metrics_call req call =
+  let module D = Debug.Debugger(struct let name = "XXX api_server" end) in
+  let additional_headers req =
+    let kvpairs x =
+      String.concat "; " (List.map (fun (k, v) -> k ^ "=" ^ v) x) in
+    kvpairs req.Http.Request.additional_headers in
+  let call, params = API.From.methodCall call in
+  let call, params = Server_helpers.transform call params in
+  let call =
+    if Server_helpers.is_async call
+    then Server_helpers.remove_async_prefix call else call in
+  match call with
+  | "VM_guest_metrics.get_all_records"
+  | "VM_guest_metrics_get_all_records" ->
+     begin match params with
+	   | session_id :: _ ->
+	      D.debug "VM_guest_metrics.get_all_records session_id = %s"
+		      (XMLRPC.From.string session_id);
+	      D.debug "Headers: %s, additional headers: { %s }"
+		      (Http.Request.to_string req)
+		      (additional_headers req)
+	   | _ -> ()
+     end
+  | msg -> ()
+
 (* This bit is called directly by the fake_rpc callback *)
 let callback1 is_json req fd body xml =
   let call,_ = XMLRPC.From.methodCall xml in
@@ -143,6 +169,7 @@ let callback is_json req bio _ =
   let body = Http_svr.read_body ~limit:Xapi_globs.http_limit_max_rpc_size req bio in
   try
     let xml = Xml.parse_string body in
+    debug_vm_guest_metrics_call req xml;    (* XXX *)
     let response = Xml.to_bigbuffer (callback1 is_json req fd (Some body) xml) in
     Http_svr.response_fct req ~hdrs:[ Http.Hdr.content_type, "text/xml";
 				    "Access-Control-Allow-Origin", "*";
